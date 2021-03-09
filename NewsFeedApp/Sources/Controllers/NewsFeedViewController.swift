@@ -27,11 +27,7 @@ class NewsFeedViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         let layout: UICollectionViewFlowLayout = UICollectionViewFlowLayout()
-        let width = UIScreen.main.bounds.width
         layout.sectionInset = UIEdgeInsets(top: 0, left: 5, bottom: 0, right: 5)
-        layout.itemSize = CGSize(width: width / 5, height: width / 4)
-        layout.minimumInteritemSpacing = 0.5
-        layout.minimumLineSpacing = 3
         collectionView!.collectionViewLayout = layout
         
         self.viewModel.newsFeed{(errorMessage) in
@@ -41,6 +37,16 @@ class NewsFeedViewController: UIViewController {
             }
         }
     }
+    
+    override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
+        super.viewWillTransition(to: size, with: coordinator)
+        
+        coordinator.animate(
+            alongsideTransition: { _ in self.collectionView.collectionViewLayout.invalidateLayout() },
+            completion: { _ in }
+        )
+    }
+    
 }
 
 extension NewsFeedViewController: UICollectionViewDataSource {
@@ -66,5 +72,28 @@ extension NewsFeedViewController: UICollectionViewDelegate {
         let detailViewController = self.storyboard!.instantiateViewController(withIdentifier: "DetailViewController") as! DetailViewController
         detailViewController.detailViewData = self.viewModel.dataArray[indexPath.row]
         self.navigationController!.pushViewController(detailViewController, animated: true)
+    }
+    
+}
+
+extension NewsFeedViewController: UICollectionViewDelegateFlowLayout {
+    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
+        guard let flowLayout = collectionViewLayout as? UICollectionViewFlowLayout else {
+            return CGSize()
+        }
+        
+        let noOfCellsInRow: Int
+        // We can also use size classes to decide the number of cells in rows (Since iPhone is Compact| Regualar and IphoneMax and IPads are Regular|Regular we can using the userInterfaceIdiom approach.  But in requirement it mentioned only the iphone and the ipad.  So going with this approach.
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            noOfCellsInRow = 8
+        } else {
+            noOfCellsInRow = 4
+        }
+        let totalSpace = flowLayout.sectionInset.left
+            + flowLayout.sectionInset.right
+            + (flowLayout.minimumInteritemSpacing * CGFloat(noOfCellsInRow - 1))
+        
+        let size = Int((collectionView.bounds.width - totalSpace) / CGFloat(noOfCellsInRow))
+        return CGSize(width: size, height: size)
     }
 }
